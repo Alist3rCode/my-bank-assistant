@@ -316,13 +316,20 @@ for svc in db redis backend frontend; do
         || die "Container '$svc' ne demarre pas dans les ${HEALTH_TIMEOUT}s — logs : docker compose logs $svc"
 done
 
-# Laisser Alembic finir ses migrations
-sleep 6
-
-# Sante API backend
-info "Test /health backend..."
-HEALTH_JSON=$(backend_curl /health) \
-    || die "Impossible de joindre le backend sur /health"
+# Sante API backend — retry jusqu'a ce que le backend reponde (alembic + seeding peuvent prendre du temps)
+info "Attente du backend sur /health..."
+BACKEND_READY=false
+for i in $(seq 1 15); do
+    HEALTH_JSON=$(backend_curl /health 2>/dev/null || true)
+    if [[ "$(json_field "$HEALTH_JSON" status)" == "ok" ]]; then
+        BACKEND_READY=true
+        break
+    fi
+    info "Backend pas encore pret (${i}/15) — retry dans 4s..."
+    sleep 4
+done
+[[ "$BACKEND_READY" == "true" ]] \
+    || die "Impossible de joindre le backend sur /health apres 60s"
 
 API_STATUS=$(json_field "$HEALTH_JSON" status)
 API_VERSION=$(json_field "$HEALTH_JSON" version)
@@ -361,7 +368,26 @@ fi
 
 # ── 6. NETTOYAGE ──────────────────────────────────────────────────────────────
 step "Nettoyage"
-docker image prune -f >> "$LOG_FILE" 2>&1 && ok "Images obsoletes supprimees"
+
+# Supprimer les anciennes versions taguees des images bank-assistant (garder :latest et :rollback)
+REMOVED=0
+for svc in backend frontend; do
+    while IFS= read -r line; do
+        img_id=$(echo "$line" | awk '{print $1}')
+        img_tag=$(echo "$line" | awk '{print $2}')
+        [[ "$img_tag" == "latest" || "$img_tag" == "rollback" ]] && continue
+        docker rmi "$img_id" >> "$LOG_FILE" 2>&1 && REMOVED=$((REMOVED + 1)) || true
+    done < <(docker images "${REGISTRY}/bank-assistant-${svc}" --format "{{.ID}} {{.Tag}}" 2>/dev/null)
+done
+
+# Supprimer les images pendantes (sans tag)
+docker image prune -f >> "$LOG_FILE" 2>&1 || true
+
+if [[ $REMOVED -gt 0 ]]; then
+    ok "${REMOVED} ancienne(s) image(s) bank-assistant supprimee(s)"
+else
+    ok "Aucune ancienne image a supprimer"
+fi
 
 # ── SUCCES ────────────────────────────────────────────────────────────────────
 ROLLBACK_NEEDED=false
