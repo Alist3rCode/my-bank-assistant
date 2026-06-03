@@ -23,6 +23,10 @@ class Settings(BaseSettings):
 
     REDIS_URL: str = "redis://redis:6379/0"
 
+    FIRST_USER_EMAIL: str = ""
+    FIRST_USER_PASSWORD: str = ""
+    FIRST_USER_NAME: str = "Admin"
+
     CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:80"]
 
     class Config:

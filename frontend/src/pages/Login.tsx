@@ -7,7 +7,7 @@ import { useAuthStore } from "../store/useStore";
 export default function Login() {
   const navigate = useNavigate();
   const { setAuth } = useAuthStore();
-  const [mode, setMode] = useState<"login" | "register">("login");
+  const mode = "login";
   const [form, setForm] = useState({ email: "", password: "", full_name: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -42,33 +42,7 @@ export default function Login() {
         </div>
 
         <div className="card">
-          <div className="flex mb-6 bg-gray-800 rounded-lg p-1">
-            {(["login", "register"] as const).map((m) => (
-              <button
-                key={m}
-                onClick={() => setMode(m)}
-                className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  mode === m ? "bg-gray-700 text-white" : "text-gray-400"
-                }`}
-              >
-                {m === "login" ? "Connexion" : "Inscription"}
-              </button>
-            ))}
-          </div>
-
           <form onSubmit={submit} className="space-y-4">
-            {mode === "register" && (
-              <div>
-                <label className="block text-sm text-gray-400 mb-1">Nom complet</label>
-                <input
-                  className="input w-full"
-                  placeholder="Jean Dupont"
-                  value={form.full_name}
-                  onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-                  required
-                />
-              </div>
-            )}
             <div>
               <label className="block text-sm text-gray-400 mb-1">Email</label>
               <input
