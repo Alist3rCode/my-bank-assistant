@@ -35,7 +35,11 @@ export const authApi = {
 export const accountsApi = {
   list: () => api.get<Account[]>("/accounts/"),
   summary: (id: number) => api.get<{ balance: number; monthly_income: number; monthly_expenses: number; monthly_net: number }>(`/accounts/${id}/summary`),
-  sync: (id: number) => api.post(`/accounts/sync/${id}`),
+  sync: (id: number) => api.post<{ message: string; account_id: number; new_transactions: number }>(`/accounts/sync/${id}`),
+  connectStart: (redirect_url: string) =>
+    api.post<{ connect_url: string }>("/accounts/connect/start", { redirect_url }),
+  connectCallback: (item_uuid: string) =>
+    api.post<{ connection_id: number; bank_name: string; accounts_count: number }>("/accounts/connect/callback", { item_uuid }),
 };
 
 // ── Transactions ──────────────────────────────────────────────────────────────

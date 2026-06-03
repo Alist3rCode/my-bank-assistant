@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { TrendingUp, TrendingDown, Wallet, PiggyBank, Target, AlertTriangle } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, PiggyBank, Target, AlertTriangle, Plus } from "lucide-react";
 import { accountsApi, savingsApi, projectsApi, aiApi, transactionsApi } from "../services/api";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import type { Account } from "../types";
+import { useState } from "react";
 
 const CATEGORY_COLORS: Record<string, string> = {
   alimentation: "#f97316",
@@ -24,6 +25,19 @@ function fmt(amount: number, currency = "EUR") {
 
 export default function Dashboard() {
   const now = new Date();
+  const [connecting, setConnecting] = useState(false);
+
+  const handleConnectBank = async () => {
+    setConnecting(true);
+    try {
+      const callbackUrl = `${window.location.origin}/connect/callback`;
+      const { data } = await accountsApi.connectStart(callbackUrl);
+      window.location.href = data.connect_url;
+    } catch {
+      setConnecting(false);
+      alert("Impossible de démarrer la connexion bancaire. Vérifiez la configuration Bridge API.");
+    }
+  };
   const { data: accounts = [] } = useQuery({ queryKey: ["accounts"], queryFn: () => accountsApi.list().then((r) => r.data) });
   const { data: savingsTotal } = useQuery({ queryKey: ["savings-total"], queryFn: () => savingsApi.total().then((r) => r.data) });
   const { data: projects = [] } = useQuery({ queryKey: ["projects"], queryFn: () => projectsApi.list("active").then((r) => r.data) });
@@ -74,7 +88,17 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="card">
-          <h2 className="font-semibold text-white mb-4">Comptes bancaires</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-white">Comptes bancaires</h2>
+            <button
+              onClick={handleConnectBank}
+              disabled={connecting}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white text-xs font-medium transition-colors"
+            >
+              <Plus size={14} />
+              {connecting ? "Connexion…" : "Connecter"}
+            </button>
+          </div>
           <div className="space-y-3">
             {accounts.length === 0 && <p className="text-gray-500 text-sm">Aucun compte connecté</p>}
             {accounts.map((account: Account) => (

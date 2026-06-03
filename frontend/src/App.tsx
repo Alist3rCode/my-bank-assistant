@@ -10,6 +10,7 @@ import Savings from "./pages/Savings";
 import Projects from "./pages/Projects";
 import AIInsights from "./pages/AIInsights";
 import Settings from "./pages/Settings";
+import BankConnectCallback from "./pages/BankConnectCallback";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { token } = useAuthStore();
@@ -22,6 +23,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/connect/callback" element={<BankConnectCallback />} />
         <Route
           path="/"
           element={
