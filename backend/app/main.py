@@ -18,6 +18,7 @@ def _seed_first_user() -> None:
                 email=settings.FIRST_USER_EMAIL,
                 hashed_password=hash_password(settings.FIRST_USER_PASSWORD),
                 full_name=settings.FIRST_USER_NAME,
+                is_superuser=True,
             ))
             db.commit()
     finally:

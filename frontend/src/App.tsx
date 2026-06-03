@@ -9,6 +9,7 @@ import Budgets from "./pages/Budgets";
 import Savings from "./pages/Savings";
 import Projects from "./pages/Projects";
 import AIInsights from "./pages/AIInsights";
+import Settings from "./pages/Settings";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { token } = useAuthStore();
@@ -35,6 +36,7 @@ export default function App() {
           <Route path="savings" element={<Savings />} />
           <Route path="projects" element={<Projects />} />
           <Route path="ai" element={<AIInsights />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>
     </BrowserRouter>

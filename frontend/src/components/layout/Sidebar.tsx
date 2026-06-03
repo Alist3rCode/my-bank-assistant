@@ -11,6 +11,7 @@ import {
   Sun,
   Moon,
   Monitor,
+  Settings,
 } from "lucide-react";
 import { useAuthStore } from "../../store/useStore";
 import { useTheme } from "../../contexts/ThemeContext";
@@ -23,6 +24,7 @@ const nav = [
   { to: "/savings", icon: PiggyBank, label: "Épargne" },
   { to: "/projects", icon: Target, label: "Projets" },
   { to: "/ai", icon: Sparkles, label: "IA & Analyses" },
+  { to: "/settings", icon: Settings, label: "Paramètres" },
 ];
 
 const THEME_CYCLE: ThemePreference[] = ["system", "light", "dark"];

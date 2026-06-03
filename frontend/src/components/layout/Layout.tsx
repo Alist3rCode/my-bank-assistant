@@ -2,7 +2,7 @@ import { NavLink, Outlet } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import {
   LayoutDashboard, ArrowLeftRight, PieChart,
-  PiggyBank, Target, Sparkles,
+  PiggyBank, Target, Sparkles, Settings,
 } from "lucide-react";
 
 const mobileNav = [
@@ -12,6 +12,7 @@ const mobileNav = [
   { to: "/savings", icon: PiggyBank, label: "Épargne" },
   { to: "/projects", icon: Target, label: "Projets" },
   { to: "/ai", icon: Sparkles, label: "IA" },
+  { to: "/settings", icon: Settings, label: "Paramètres" },
 ];
 
 export default function Layout() {
