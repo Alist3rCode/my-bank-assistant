@@ -29,6 +29,11 @@ class AccountRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class BridgeConfigStatus(BaseModel):
+    configured: bool
+    missing_fields: list[str]
+
+
 class ConnectStartRequest(BaseModel):
     redirect_url: str
 

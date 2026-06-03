@@ -7,6 +7,7 @@ from app.models.account import Account, AccountType, BankConnection, BankConnect
 from app.models.transaction import Transaction
 from app.schemas.account import (
     AccountRead, BankConnectionRead,
+    BridgeConfigStatus,
     ConnectStartRequest, ConnectStartResponse,
     ConnectCallbackRequest, ConnectCallbackResponse,
 )
@@ -23,6 +24,17 @@ _BRIDGE_ACCOUNT_TYPE_MAP = {
     3: AccountType.CREDIT,
     4: AccountType.INVESTMENT,
 }
+
+
+@router.get("/connect/status", response_model=BridgeConfigStatus)
+def connect_status(_: User = Depends(get_current_user)):
+    """Indique si la configuration Bridge API est présente côté serveur."""
+    missing: list[str] = []
+    if not settings.BRIDGE_CLIENT_ID:
+        missing.append("BRIDGE_CLIENT_ID")
+    if not settings.BRIDGE_CLIENT_SECRET:
+        missing.append("BRIDGE_CLIENT_SECRET")
+    return BridgeConfigStatus(configured=len(missing) == 0, missing_fields=missing)
 
 
 @router.post("/connect/start", response_model=ConnectStartResponse)
