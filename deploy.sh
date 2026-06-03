@@ -123,7 +123,7 @@ backend_curl() {
 
 # Extrait un champ JSON simple (sans dépendance jq/python)
 json_field() {
-    echo "$1" | grep -o "\"${2}\":\"[^\"]*\"" | cut -d'"' -f4
+    echo "$1" | grep -o "\"${2}\":\"[^\"]*\"" | cut -d'"' -f4 || true
 }
 
 # ── Résumé final ──────────────────────────────────────────────────────────────
