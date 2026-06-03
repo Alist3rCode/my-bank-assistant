@@ -206,8 +206,24 @@ ok "Fichier $COMPOSE_FILE present"
 ok ".env present"
 
 # Variables obligatoires non vides / non par defaut
-# shellcheck source=/dev/null
-source .env
+# Lecture sécurisée du .env (sans exécuter les valeurs spéciales comme &, $, !)
+_load_env() {
+    local key raw val
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        [[ "$line" =~ ^[[:space:]]*# || -z "${line//[[:space:]]/}" ]] && continue
+        key="${line%%=*}"
+        raw="${line#*=}"
+        if [[ "$raw" == \'*\' ]]; then
+            val="${raw:1:${#raw}-2}"
+        elif [[ "$raw" == \"*\" ]]; then
+            val="${raw:1:${#raw}-2}"
+        else
+            val="$raw"
+        fi
+        export "$key=$val"
+    done < .env
+}
+_load_env
 BAD_VARS=()
 for var in POSTGRES_PASSWORD SECRET_KEY GROQ_API_KEY REDIS_PASSWORD; do
     val="${!var:-}"
@@ -226,10 +242,10 @@ DISK_FREE_GB=$(df -BG . | awk 'NR==2 {gsub("G",""); print $4}')
     || die "Espace disque insuffisant : ${DISK_FREE_GB}Go (minimum ${DISK_MIN_GB}Go)"
 ok "Espace disque : ${DISK_FREE_GB}Go libres"
 
-# Reseau cloudflared
-docker network inspect cloudflared &>/dev/null \
-    || die "Reseau Docker 'cloudflared' introuvable — creer avec : docker network create cloudflared"
-ok "Reseau cloudflared present"
+# Reseau proxy (cloudflare tunnel)
+docker network inspect proxy &>/dev/null \
+    || die "Reseau Docker 'proxy' introuvable — creer avec : docker network create proxy"
+ok "Reseau proxy present"
 
 # Auth GHCR
 if grep -q "ghcr.io" "${HOME}/.docker/config.json" 2>/dev/null; then
