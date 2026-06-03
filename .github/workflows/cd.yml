@@ -69,41 +69,18 @@ jobs:
 
   deploy:
     name: Deploy to VPS
-    runs-on: ubuntu-latest
+    # Le runner tourne directement sur le serveur — pas de SSH entrant requis.
+    # Prérequis : runner installé et enregistré sur le dépôt via
+    #   Settings → Actions → Runners → New self-hosted runner
+    runs-on: self-hosted
     needs: build-push
-    # Pas d'`environment:` ici — les secrets VPS_* sont des secrets de dépôt.
-    # Si vous voulez des règles de protection (approbation manuelle, délai),
-    # créez l'environnement "production" dans Settings > Environments et
-    # déplacez-y les secrets VPS_*, puis remettez `environment: production`.
     steps:
-      - name: Verify SSH secrets are set
+      - name: Pull latest code
         run: |
-          if [[ -z "${{ secrets.VPS_HOST }}" ]]; then
-            echo "::error::Secret VPS_HOST est vide. Ajoutez-le dans Settings > Secrets > Actions."
-            exit 1
-          fi
-          if [[ -z "${{ secrets.VPS_USER }}" ]]; then
-            echo "::error::Secret VPS_USER est vide."
-            exit 1
-          fi
-          if [[ -z "${{ secrets.VPS_SSH_KEY }}" ]]; then
-            echo "::error::Secret VPS_SSH_KEY est vide."
-            exit 1
-          fi
-          echo "Secrets SSH présents."
+          cd /opt/bank-assistant
+          git pull origin main
 
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host:     ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key:      ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            set -e
-            cd /opt/bank-assistant
-
-            # Mettre à jour les scripts de déploiement depuis git
-            git pull origin main
-
-            # Lancer le script de déploiement avec le tag exact buildé par le CI
-            ./deploy.sh --tag "${{ needs.build-push.outputs.image_tag }}"
+      - name: Deploy
+        run: |
+          cd /opt/bank-assistant
+          ./deploy.sh --tag "${{ needs.build-push.outputs.image_tag }}"
