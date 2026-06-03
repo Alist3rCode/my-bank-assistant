@@ -295,8 +295,18 @@ fi
 step "Telechargement des nouvelles images"
 ROLLBACK_NEEDED=true   # a partir d'ici, tout echec declenche un rollback
 
-docker compose -f "$COMPOSE_FILE" pull >> "$LOG_FILE" 2>&1 \
-    || die "Echec du pull — verifier l'auth GHCR et que le CD a bien tourne"
+_PULL_SVCS=(db redis backend frontend)
+_PULL_TOTAL=${#_PULL_SVCS[@]}
+_PULL_DONE=0
+
+for _svc in "${_PULL_SVCS[@]}"; do
+    _PULL_DONE=$(( _PULL_DONE + 1 ))
+    _PCT=$(( _PULL_DONE * 100 / _PULL_TOTAL ))
+    info "[${_PCT}%] Pull ${_svc}..."
+    docker compose -f "$COMPOSE_FILE" pull "$_svc" >> "$LOG_FILE" 2>&1 \
+        || die "Echec du pull de '${_svc}' — verifier l'auth GHCR"
+    ok "[${_PCT}%] ${_svc} a jour"
+done
 
 DIGEST_AFTER=$(image_digest backend)
 
