@@ -54,7 +54,7 @@ export default function Savings() {
             <div key={saving.id} className="card relative group">
               <button
                 onClick={() => deleteMutation.mutate(saving.id)}
-                className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 text-gray-600 hover:text-red-400 transition-all"
+                className="absolute top-4 right-4 p-1 text-gray-600 hover:text-red-400 transition-colors"
               >
                 <Trash2 size={14} />
               </button>

@@ -29,7 +29,7 @@ export default function Budgets() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h1 className="text-2xl font-bold text-white">Budgets</h1>
         <div className="flex items-center gap-2">
           <select
@@ -50,7 +50,7 @@ export default function Budgets() {
       </div>
 
       {budgets.length > 0 && (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4">
           <div className="card">
             <p className="text-xs text-gray-500 uppercase tracking-wide">Budget total</p>
             <p className="text-xl font-bold text-white mt-1">{fmt(totalLimit)}</p>
@@ -132,7 +132,7 @@ function AddBudgetForm({ month, year, onSuccess }: { month: number; year: number
   return (
     <form
       onSubmit={(e) => { e.preventDefault(); createMutation.mutate(); }}
-      className="flex items-end gap-3"
+      className="flex flex-col sm:flex-row sm:items-end gap-3"
     >
       <div className="flex-1">
         <label className="block text-xs text-gray-500 mb-1">Catégorie</label>
@@ -142,11 +142,11 @@ function AddBudgetForm({ month, year, onSuccess }: { month: number; year: number
           ))}
         </select>
       </div>
-      <div className="w-36">
+      <div className="w-full sm:w-36">
         <label className="block text-xs text-gray-500 mb-1">Limite mensuelle (€)</label>
         <input className="input w-full" type="number" min="1" placeholder="500" value={limit} onChange={(e) => setLimit(e.target.value)} required />
       </div>
-      <button type="submit" className="btn-primary" disabled={createMutation.isPending}>
+      <button type="submit" className="btn-primary w-full sm:w-auto" disabled={createMutation.isPending}>
         Ajouter
       </button>
     </form>

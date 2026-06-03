@@ -170,9 +170,9 @@ export default function AIInsights() {
                   </div>
                   <button
                     onClick={() => dismissMutation.mutate(insight.id)}
-                    className="text-gray-600 hover:text-gray-400 transition-colors shrink-0"
+                    className="p-1.5 text-gray-600 hover:text-gray-400 transition-colors shrink-0"
                   >
-                    <X size={14} />
+                    <X size={16} />
                   </button>
                 </div>
               </div>

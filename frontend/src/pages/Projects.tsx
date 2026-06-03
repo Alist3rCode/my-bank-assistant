@@ -41,20 +41,20 @@ export default function Projects() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {projects.map((project: Project) => (
             <div key={project.id} className="card group relative">
-              <div className="absolute top-4 right-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all">
+              <div className="absolute top-4 right-4 flex items-center gap-2">
                 <button
                   onClick={() => simulateMutation.mutate(project.id)}
                   disabled={simulateMutation.isPending}
-                  className="text-gray-500 hover:text-purple-400 transition-colors"
+                  className="p-1 text-gray-500 hover:text-purple-400 transition-colors"
                   title="Simuler avec l'IA"
                 >
-                  <Sparkles size={14} />
+                  <Sparkles size={16} />
                 </button>
                 <button
                   onClick={() => deleteMutation.mutate(project.id)}
-                  className="text-gray-500 hover:text-red-400 transition-colors"
+                  className="p-1 text-gray-500 hover:text-red-400 transition-colors"
                 >
-                  <Trash2 size={14} />
+                  <Trash2 size={16} />
                 </button>
               </div>
 

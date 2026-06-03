@@ -45,7 +45,7 @@ export default function Sidebar() {
   const { icon: ThemeIcon, label: themeLabel } = THEME_META[preference];
 
   return (
-    <aside className="w-60 flex flex-col bg-gray-900 border-r border-gray-800 shrink-0">
+    <aside className="hidden md:flex w-60 flex-col bg-gray-900 border-r border-gray-800 shrink-0">
       <div className="flex items-center gap-3 px-5 py-5 border-b border-gray-800">
         <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
           <Landmark size={16} className="text-white" />
