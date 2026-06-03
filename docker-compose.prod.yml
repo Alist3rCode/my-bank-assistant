@@ -2,13 +2,15 @@ services:
   db:
     image: postgres:16-alpine
     restart: always
-    env_file: .env.prod
+    env_file: .env
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
@@ -21,28 +23,36 @@ services:
     command: redis-server --requirepass ${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
+    networks:
+      - data
 
   backend:
-    image: ${REGISTRY}/bank-assistant-backend:${IMAGE_TAG:-latest}
+    image: ${REGISTRY:-ghcr.io/alist3rcode}/bank-assistant-backend:${IMAGE_TAG:-latest}
     restart: always
-    env_file: .env.prod
+    env_file: .env
     depends_on:
       db:
         condition: service_healthy
     command: >
       sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2"
+    networks:
+      - data
+      - proxy
 
   frontend:
-    image: ${REGISTRY}/bank-assistant-frontend:${IMAGE_TAG:-latest}
+    image: ${REGISTRY:-ghcr.io/alist3rcode}/bank-assistant-frontend:${IMAGE_TAG:-latest}
     restart: always
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
       - backend
+    networks:
+      - proxy
 
 volumes:
   postgres_data:
   redis_data:
+
+networks:
+  data:
+    internal: true
+  proxy:
+    external: true
