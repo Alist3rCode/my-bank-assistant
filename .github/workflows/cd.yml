@@ -1,0 +1,109 @@
+name: CD — Deploy to VPS
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+
+jobs:
+  build-push:
+    name: Build & push Docker images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_tag: ${{ steps.meta.outputs.version }}
+      registry:  ${{ steps.registry.outputs.value }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # ghcr.io requires fully lowercase image names; github.repository_owner
+      # preserves original casing (e.g. "Alist3rCode"), so we normalise here.
+      - name: Set lowercase registry
+        id: registry
+        run: |
+          echo "value=ghcr.io/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" \
+            >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.registry.outputs.value }}/bank-assistant
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=sha,prefix=sha-
+
+      - name: Build & push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ steps.registry.outputs.value }}/bank-assistant-backend:${{ steps.meta.outputs.version }}
+            ${{ steps.registry.outputs.value }}/bank-assistant-backend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ${{ steps.registry.outputs.value }}/bank-assistant-frontend:${{ steps.meta.outputs.version }}
+            ${{ steps.registry.outputs.value }}/bank-assistant-frontend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    needs: build-push
+    # Pas d'`environment:` ici — les secrets VPS_* sont des secrets de dépôt.
+    # Si vous voulez des règles de protection (approbation manuelle, délai),
+    # créez l'environnement "production" dans Settings > Environments et
+    # déplacez-y les secrets VPS_*, puis remettez `environment: production`.
+    steps:
+      - name: Verify SSH secrets are set
+        run: |
+          if [[ -z "${{ secrets.VPS_HOST }}" ]]; then
+            echo "::error::Secret VPS_HOST est vide. Ajoutez-le dans Settings > Secrets > Actions."
+            exit 1
+          fi
+          if [[ -z "${{ secrets.VPS_USER }}" ]]; then
+            echo "::error::Secret VPS_USER est vide."
+            exit 1
+          fi
+          if [[ -z "${{ secrets.VPS_SSH_KEY }}" ]]; then
+            echo "::error::Secret VPS_SSH_KEY est vide."
+            exit 1
+          fi
+          echo "Secrets SSH présents."
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host:     ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key:      ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/bank-assistant
+
+            # Mettre à jour les scripts de déploiement depuis git
+            git pull origin main
+
+            # Lancer le script de déploiement avec le tag exact buildé par le CI
+            ./deploy.sh --tag "${{ needs.build-push.outputs.image_tag }}"
