@@ -76,6 +76,22 @@ class BridgeService:
 
         return transactions[:limit]
 
+    def get_user_access_token(self, bridge_user_uuid: str) -> str:
+        """Récupère l'access token d'un utilisateur Bridge via son UUID."""
+        with self._client() as client:
+            resp = client.get(f"/aggregation/users/{bridge_user_uuid}/access-token")
+            resp.raise_for_status()
+            return resp.json()["access_token"]
+
+    def get_item_by_uuid(self, bridge_user_uuid: str, item_uuid: str) -> dict:
+        """Récupère les détails d'un item Bridge (connexion bancaire)."""
+        user_access_token = self.get_user_access_token(bridge_user_uuid)
+        headers = {**self.headers, "Authorization": f"Bearer {user_access_token}"}
+        with httpx.Client(base_url=self.base_url, headers=headers, timeout=30) as client:
+            resp = client.get(f"/aggregation/items/{item_uuid}")
+            resp.raise_for_status()
+            return resp.json()
+
     def refresh_item(self, user_access_token: str, item_id: int) -> dict:
         """Force une mise à jour des données d'une connexion bancaire."""
         headers = {**self.headers, "Authorization": f"Bearer {user_access_token}"}

@@ -27,3 +27,21 @@ class AccountRead(BaseModel):
     last_sync_at: datetime | None
 
     model_config = {"from_attributes": True}
+
+
+class ConnectStartRequest(BaseModel):
+    redirect_url: str
+
+
+class ConnectStartResponse(BaseModel):
+    connect_url: str
+
+
+class ConnectCallbackRequest(BaseModel):
+    item_uuid: str
+
+
+class ConnectCallbackResponse(BaseModel):
+    connection_id: int
+    bank_name: str
+    accounts_count: int
