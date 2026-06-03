@@ -115,10 +115,17 @@ image_digest() {
         | grep -oE 'sha256:[a-f0-9]{12}' || echo "aucune"
 }
 
-# Appel HTTP interne depuis le container backend
+# Appel HTTP interne depuis le container backend (python:3.12-slim n'a pas curl)
 backend_curl() {
     docker compose -f "$COMPOSE_FILE" exec -T backend \
-        curl -sf --max-time 10 "http://localhost:8000$1" 2>/dev/null
+        python -c "
+import urllib.request, sys
+try:
+    r = urllib.request.urlopen('http://localhost:8000$1', timeout=10)
+    print(r.read().decode())
+except Exception as e:
+    sys.exit(1)
+" 2>/dev/null
 }
 
 # Extrait un champ JSON simple (sans dépendance jq/python)
