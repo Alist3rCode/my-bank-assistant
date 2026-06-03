@@ -51,7 +51,7 @@ jobs:
             ${{ steps.registry.outputs.value }}/bank-assistant-backend:${{ steps.meta.outputs.version }}
             ${{ steps.registry.outputs.value }}/bank-assistant-backend:latest
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-to: type=gha,mode=max,ignore-error=true
 
       - name: Build & push frontend
         uses: docker/build-push-action@v6
@@ -62,7 +62,7 @@ jobs:
             ${{ steps.registry.outputs.value }}/bank-assistant-frontend:${{ steps.meta.outputs.version }}
             ${{ steps.registry.outputs.value }}/bank-assistant-frontend:latest
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-to: type=gha,mode=max,ignore-error=true
 
       - name: Summary
         run: |
