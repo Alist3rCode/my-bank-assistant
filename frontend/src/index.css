@@ -2,6 +2,46 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * CSS variables for the gray palette and white.
+ * Light mode  = inverted gray scale (950 → near-white, 50 → near-black).
+ * Dark mode   = standard Tailwind gray values.
+ * Tailwind reads these via the custom gray colors in tailwind.config.js,
+ * so every bg-gray-*, text-gray-*, border-gray-* adapts automatically.
+ */
+
+:root {
+  /* ── Light mode (default) ─────────────────────────────────── */
+  --gray-50:  3   7   18;    /* near-black  */
+  --gray-100: 17  24  39;
+  --gray-200: 31  41  55;
+  --gray-300: 55  65  81;
+  --gray-400: 75  85  99;
+  --gray-500: 107 114 128;   /* mid-gray stays the same */
+  --gray-600: 156 163 175;
+  --gray-700: 209 213 219;
+  --gray-800: 229 231 235;
+  --gray-900: 243 244 246;
+  --gray-950: 249 250 251;   /* near-white */
+  --color-white: 17  24  39; /* "white" text = near-black in light mode */
+}
+
+html.dark {
+  /* ── Dark mode ──────────────────────────────────────────────── */
+  --gray-50:  249 250 251;   /* near-white */
+  --gray-100: 243 244 246;
+  --gray-200: 229 231 235;
+  --gray-300: 209 213 219;
+  --gray-400: 156 163 175;
+  --gray-500: 107 114 128;
+  --gray-600: 75  85  99;
+  --gray-700: 55  65  81;
+  --gray-800: 31  41  55;
+  --gray-900: 17  24  39;
+  --gray-950: 3   7   18;    /* near-black */
+  --color-white: 255 255 255;
+}
+
 @layer base {
   body {
     @apply bg-gray-950 text-gray-100 antialiased;
@@ -27,7 +67,9 @@
   }
 
   .input {
-    @apply bg-gray-800 border border-gray-700 text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder-gray-500;
+    @apply bg-gray-800 border border-gray-700 text-gray-100 rounded-lg px-3 py-2 text-sm
+           focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
+           placeholder-gray-500;
   }
 
   .badge {
@@ -35,12 +77,6 @@
   }
 }
 
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  @apply bg-gray-700 rounded-full;
-}
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { @apply bg-gray-700 rounded-full; }
