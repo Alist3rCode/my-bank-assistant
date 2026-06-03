@@ -1,4 +1,4 @@
-name: CD — Deploy to VPS
+name: CD — Build & push Docker images
 
 on:
   push:
@@ -7,19 +7,16 @@ on:
 
 jobs:
   build-push:
-    name: Build & push Docker images
+    name: Build & push images to GHCR
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-    outputs:
-      image_tag: ${{ steps.meta.outputs.version }}
-      registry:  ${{ steps.registry.outputs.value }}
     steps:
       - uses: actions/checkout@v4
 
-      # ghcr.io requires fully lowercase image names; github.repository_owner
-      # preserves original casing (e.g. "Alist3rCode"), so we normalise here.
+      # ghcr.io exige des noms d'image en minuscules ;
+      # github.repository_owner préserve la casse d'origine.
       - name: Set lowercase registry
         id: registry
         run: |
@@ -67,20 +64,13 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  deploy:
-    name: Deploy to VPS
-    # Le runner tourne directement sur le serveur — pas de SSH entrant requis.
-    # Prérequis : runner installé et enregistré sur le dépôt via
-    #   Settings → Actions → Runners → New self-hosted runner
-    runs-on: self-hosted
-    needs: build-push
-    steps:
-      - name: Pull latest code
+      - name: Summary
         run: |
-          cd /opt/bank-assistant
-          git pull origin main
-
-      - name: Deploy
-        run: |
-          cd /opt/bank-assistant
-          ./deploy.sh --tag "${{ needs.build-push.outputs.image_tag }}"
+          echo "### Images publiées sur GHCR 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ steps.registry.outputs.value }}/bank-assistant-backend:${{ steps.meta.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ steps.registry.outputs.value }}/bank-assistant-frontend:${{ steps.meta.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Pour déployer sur le serveur :" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "./deploy.sh --tag ${{ steps.meta.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
