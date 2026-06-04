@@ -86,24 +86,31 @@ def connect_callback(
         raise HTTPException(status_code=400, detail="Aucun utilisateur Bridge associé")
 
     try:
+        item_id_int = int(body.item_id)
+
         access_token = bridge_service.get_user_access_token(current_user.bridge_user_uuid)
         current_user.bridge_access_token = access_token
         db.flush()
 
-        item = bridge_service.get_item_by_uuid(current_user.bridge_user_uuid, body.item_uuid)
-        item_id = item.get("id")
-        bank_name = item.get("bank", {}).get("name", "Banque")
+        item = bridge_service.get_item(access_token, item_id_int)
+        # Bridge 2025 : nested resources supprimés — bank_name dans provider ou name
+        bank_name = (
+            item.get("bank", {}).get("name")
+            or item.get("provider", {}).get("name")
+            or item.get("name")
+            or "Banque"
+        )
 
         connection = db.query(BankConnection).filter(
             BankConnection.user_id == current_user.id,
-            BankConnection.bridge_item_uuid == body.item_uuid,
+            BankConnection.bridge_item_id == item_id_int,
         ).first()
 
         if not connection:
             connection = BankConnection(
                 user_id=current_user.id,
-                bridge_item_id=item_id,
-                bridge_item_uuid=body.item_uuid,
+                bridge_item_id=item_id_int,
+                bridge_item_uuid=body.item_id,
                 bank_name=bank_name,
                 status=BankConnectionStatus.ACTIVE,
                 last_sync_at=datetime.now(timezone.utc),
@@ -118,7 +125,8 @@ def connect_callback(
         accounts_synced = 0
 
         for ba in bridge_accounts:
-            if ba.get("item", {}).get("uuid") != body.item_uuid:
+            # Bridge 2025 : item_id est un champ plat (plus de item.uuid imbriqué)
+            if ba.get("item_id") != item_id_int:
                 continue
 
             bridge_account_id = ba["id"]
@@ -127,9 +135,11 @@ def connect_callback(
                 Account.bridge_account_id == bridge_account_id,
             ).first()
 
-            account_type = _BRIDGE_ACCOUNT_TYPE_MAP.get(
-                ba.get("type", {}).get("id", 1), AccountType.CHECKING
-            )
+            type_val = ba.get("type")
+            if isinstance(type_val, dict):
+                account_type = _BRIDGE_ACCOUNT_TYPE_MAP.get(type_val.get("id", 1), AccountType.CHECKING)
+            else:
+                account_type = AccountType.CHECKING
 
             if existing:
                 existing.balance = ba.get("balance", existing.balance)
@@ -155,7 +165,7 @@ def connect_callback(
         )
     except httpx.HTTPStatusError as e:
         db.rollback()
-        raise HTTPException(status_code=502, detail=f"Erreur Bridge API : {e.response.text}")
+        raise HTTPException(status_code=502, detail=f"Erreur Bridge API [{e.response.status_code}] : {e.response.text}")
 
 
 @router.get("/", response_model=list[AccountRead])

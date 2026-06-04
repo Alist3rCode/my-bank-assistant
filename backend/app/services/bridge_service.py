@@ -89,7 +89,13 @@ class BridgeService:
 
         return transactions[:limit]
 
-    def get_user_access_token(self, bridge_user_uuid: str) -> str:
+    def get_item(self, access_token: str, item_id: str | int) -> dict:
+        """Récupère les détails d'un item Bridge par son ID numérique."""
+        with self._client({"Authorization": f"Bearer {access_token}"}) as client:
+            resp = client.get(f"aggregation/items/{item_id}")
+            logger.info("Bridge get_item/%s → status=%s body=%.500s", item_id, resp.status_code, resp.text)
+            resp.raise_for_status()
+            return resp.json()
         with self._client() as client:
             resp = client.post("aggregation/authorization/token", json={"user_uuid": bridge_user_uuid})
             resp.raise_for_status()

@@ -16,16 +16,24 @@ export default function BankConnectCallback() {
     if (called.current) return;
     called.current = true;
 
-    const itemUuid = searchParams.get("item_uuid") ?? searchParams.get("item_id");
+    // Bridge 2025 envoie item_id (numérique), item_uuid est l'ancien format
+    const itemId = searchParams.get("item_id") ?? searchParams.get("item_uuid");
+    const success = searchParams.get("success");
 
-    if (!itemUuid) {
+    if (success === "false") {
       setStatus("error");
-      setMessage("Paramètre item_uuid manquant dans l'URL de retour.");
+      setMessage("La connexion bancaire a été annulée ou a échoué côté Bridge.");
+      return;
+    }
+
+    if (!itemId) {
+      setStatus("error");
+      setMessage(`Paramètre item_id manquant dans l'URL de retour. Paramètres reçus : ${searchParams.toString()}`);
       return;
     }
 
     accountsApi
-      .connectCallback(itemUuid)
+      .connectCallback(itemId)
       .then(({ data }) => {
         setStatus("success");
         setMessage(

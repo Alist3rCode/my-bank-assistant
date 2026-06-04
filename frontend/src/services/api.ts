@@ -40,8 +40,8 @@ export const accountsApi = {
     api.get<{ configured: boolean; missing_fields: string[] }>("/accounts/connect/status"),
   connectStart: (redirect_url: string) =>
     api.post<{ connect_url: string }>("/accounts/connect/start", { redirect_url }),
-  connectCallback: (item_uuid: string) =>
-    api.post<{ connection_id: number; bank_name: string; accounts_count: number }>("/accounts/connect/callback", { item_uuid }),
+  connectCallback: (item_id: string) =>
+    api.post<{ connection_id: number; bank_name: string; accounts_count: number }>("/accounts/connect/callback", { item_id }),
 };
 
 // ── Transactions ──────────────────────────────────────────────────────────────

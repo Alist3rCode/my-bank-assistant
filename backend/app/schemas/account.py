@@ -43,7 +43,7 @@ class ConnectStartResponse(BaseModel):
 
 
 class ConnectCallbackRequest(BaseModel):
-    item_uuid: str
+    item_id: str
 
 
 class ConnectCallbackResponse(BaseModel):
