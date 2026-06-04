@@ -1,6 +1,9 @@
+import logging
 import httpx
 from datetime import datetime
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class BridgeService:
@@ -9,38 +12,52 @@ class BridgeService:
     Docs: https://docs.bridgeapi.io
     """
 
-    def _client(self) -> httpx.Client:
-        headers = {
+    def _base_url(self) -> str:
+        url = settings.BRIDGE_API_URL
+        return url if url.endswith("/") else url + "/"
+
+    def _headers(self, extra: dict | None = None) -> dict:
+        h = {
             "Client-Id": settings.BRIDGE_CLIENT_ID,
             "Client-Secret": settings.BRIDGE_CLIENT_SECRET,
             "Bridge-Version": "2021-06-01",
             "Content-Type": "application/json",
         }
-        return httpx.Client(base_url=settings.BRIDGE_API_URL, headers=headers, timeout=30)
+        if extra:
+            h.update(extra)
+        return h
+
+    def _client(self, extra_headers: dict | None = None) -> httpx.Client:
+        base = self._base_url()
+        logger.debug("Bridge _client base_url=%s client_id_set=%s client_secret_set=%s",
+                     base,
+                     bool(settings.BRIDGE_CLIENT_ID),
+                     bool(settings.BRIDGE_CLIENT_SECRET))
+        return httpx.Client(base_url=base, headers=self._headers(extra_headers), timeout=30)
 
     def get_connect_url(self, user_uuid: str, redirect_url: str) -> str:
-        """Génère l'URL de connexion Bridge pour un utilisateur."""
+        logger.info("Bridge get_connect_url user_uuid=%s redirect_url=%s", user_uuid, redirect_url)
         with self._client() as client:
-            resp = client.post("/connect/items/add/url", json={
+            resp = client.post("connect/items/add/url", json={
                 "user_uuid": user_uuid,
                 "redirect_url": redirect_url,
                 "country": "fr",
             })
+            logger.info("Bridge get_connect_url → status=%s body=%.500s", resp.status_code, resp.text)
             resp.raise_for_status()
             return resp.json()["redirect_url"]
 
     def create_bridge_user(self, external_user_id: str) -> dict:
-        """Crée un utilisateur Bridge lié à notre utilisateur."""
+        logger.info("Bridge create_bridge_user external_user_id=%s", external_user_id)
         with self._client() as client:
-            resp = client.post("/aggregation/users", json={"external_user_id": external_user_id})
+            resp = client.post("aggregation/users", json={"external_user_id": external_user_id})
+            logger.info("Bridge create_bridge_user → status=%s body=%.500s", resp.status_code, resp.text)
             resp.raise_for_status()
             return resp.json()
 
     def list_accounts(self, user_access_token: str) -> list[dict]:
-        """Récupère tous les comptes de l'utilisateur via son access token Bridge."""
-        headers = {**self.headers, "Authorization": f"Bearer {user_access_token}"}
-        with httpx.Client(base_url=self.base_url, headers=headers, timeout=30) as client:
-            resp = client.get("/aggregation/accounts")
+        with self._client({"Authorization": f"Bearer {user_access_token}"}) as client:
+            resp = client.get("aggregation/accounts")
             resp.raise_for_status()
             return resp.json().get("resources", [])
 
@@ -51,49 +68,42 @@ class BridgeService:
         since: datetime | None = None,
         limit: int = 100,
     ) -> list[dict]:
-        """Récupère les transactions (avec pagination auto jusqu'à `limit`)."""
-        headers = {**self.headers, "Authorization": f"Bearer {user_access_token}"}
         params: dict = {"limit": min(limit, 500)}
         if account_id:
             params["account_id"] = account_id
         if since:
             params["since"] = since.strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
-        transactions = []
-        url = "/aggregation/transactions"
+        transactions: list[dict] = []
+        next_url: str | None = "aggregation/transactions"
 
-        with httpx.Client(base_url=self.base_url, headers=headers, timeout=30) as client:
-            while url and len(transactions) < limit:
-                resp = client.get(url, params=params if url == "/aggregation/transactions" else None)
+        with self._client({"Authorization": f"Bearer {user_access_token}"}) as client:
+            while next_url and len(transactions) < limit:
+                resp = client.get(next_url, params=params)
                 resp.raise_for_status()
                 data = resp.json()
                 transactions.extend(data.get("resources", []))
-                url = data.get("pagination", {}).get("next_uri")
+                next_url = data.get("pagination", {}).get("next_uri")
                 params = {}
 
         return transactions[:limit]
 
     def get_user_access_token(self, bridge_user_uuid: str) -> str:
-        """Récupère l'access token d'un utilisateur Bridge via son UUID."""
         with self._client() as client:
-            resp = client.get(f"/aggregation/users/{bridge_user_uuid}/access-token")
+            resp = client.get(f"aggregation/users/{bridge_user_uuid}/access-token")
             resp.raise_for_status()
             return resp.json()["access_token"]
 
     def get_item_by_uuid(self, bridge_user_uuid: str, item_uuid: str) -> dict:
-        """Récupère les détails d'un item Bridge (connexion bancaire)."""
         user_access_token = self.get_user_access_token(bridge_user_uuid)
-        headers = {**self.headers, "Authorization": f"Bearer {user_access_token}"}
-        with httpx.Client(base_url=self.base_url, headers=headers, timeout=30) as client:
-            resp = client.get(f"/aggregation/items/{item_uuid}")
+        with self._client({"Authorization": f"Bearer {user_access_token}"}) as client:
+            resp = client.get(f"aggregation/items/{item_uuid}")
             resp.raise_for_status()
             return resp.json()
 
     def refresh_item(self, user_access_token: str, item_id: int) -> dict:
-        """Force une mise à jour des données d'une connexion bancaire."""
-        headers = {**self.headers, "Authorization": f"Bearer {user_access_token}"}
-        with httpx.Client(base_url=self.base_url, headers=headers, timeout=60) as client:
-            resp = client.post(f"/aggregation/items/{item_id}/refresh")
+        with self._client({"Authorization": f"Bearer {user_access_token}"}) as client:
+            resp = client.post(f"aggregation/items/{item_id}/refresh")
             resp.raise_for_status()
             return resp.json()
 
