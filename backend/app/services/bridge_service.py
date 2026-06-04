@@ -29,7 +29,7 @@ class BridgeService:
 
     def _client(self, extra_headers: dict | None = None) -> httpx.Client:
         base = self._base_url()
-        logger.debug("Bridge _client base_url=%s client_id_set=%s client_secret_set=%s",
+        logger.info("Bridge _client base_url=%s client_id_set=%s client_secret_set=%s",
                      base,
                      bool(settings.BRIDGE_CLIENT_ID),
                      bool(settings.BRIDGE_CLIENT_SECRET))
