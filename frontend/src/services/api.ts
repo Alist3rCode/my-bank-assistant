@@ -96,4 +96,10 @@ export const aiApi = {
   batchCategorize: () => api.post("/ai/categorize/batch"),
 };
 
+// ── Config (env) ──────────────────────────────────────────────────────────────
+export const configApi = {
+  read: () => api.get<Record<string, string | number | boolean>>("/config/"),
+  update: (data: Record<string, string>) => api.patch<{ written: string[]; restart_required: boolean }>("/config/", data),
+};
+
 export default api;
