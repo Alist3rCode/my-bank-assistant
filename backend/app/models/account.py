@@ -27,7 +27,7 @@ class BankConnection(Base):
     bridge_item_id: Mapped[int | None] = mapped_column()
     bridge_item_uuid: Mapped[str | None] = mapped_column(String(255))
     bank_name: Mapped[str] = mapped_column(String(255), default="Crédit Agricole")
-    status: Mapped[BankConnectionStatus] = mapped_column(Enum(BankConnectionStatus), default=BankConnectionStatus.PENDING)
+    status: Mapped[BankConnectionStatus] = mapped_column(Enum(BankConnectionStatus, native_enum=False), default=BankConnectionStatus.PENDING)
     last_sync_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -43,7 +43,7 @@ class Account(Base):
     connection_id: Mapped[int | None] = mapped_column(ForeignKey("bank_connections.id"))
     bridge_account_id: Mapped[int | None] = mapped_column()
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    account_type: Mapped[AccountType] = mapped_column(Enum(AccountType), default=AccountType.CHECKING)
+    account_type: Mapped[AccountType] = mapped_column(Enum(AccountType, native_enum=False), default=AccountType.CHECKING)
     balance: Mapped[float] = mapped_column(Float, default=0.0)
     currency: Mapped[str] = mapped_column(String(3), default="EUR")
     iban: Mapped[str | None] = mapped_column(String(34))
