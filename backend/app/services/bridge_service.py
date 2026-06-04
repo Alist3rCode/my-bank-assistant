@@ -35,8 +35,22 @@ class BridgeService:
                      bool(settings.BRIDGE_CLIENT_SECRET))
         return httpx.Client(base_url=base, headers=self._headers(extra_headers), timeout=30)
 
+    def create_bridge_user(self, external_user_id: str) -> dict:
+        logger.info("Bridge create_bridge_user external_user_id=%s", external_user_id)
+        with self._client() as client:
+            resp = client.post("aggregation/users", json={"external_user_id": external_user_id})
+            logger.info("Bridge create_bridge_user → status=%s body=%.500s", resp.status_code, resp.text)
+            resp.raise_for_status()
+            return resp.json()
+
+    def get_user_access_token(self, bridge_user_uuid: str) -> str:
+        with self._client() as client:
+            resp = client.post("aggregation/authorization/token", json={"user_uuid": bridge_user_uuid})
+            logger.info("Bridge get_user_access_token → status=%s body=%.200s", resp.status_code, resp.text)
+            resp.raise_for_status()
+            return resp.json()["access_token"]
+
     def get_connect_url(self, user_uuid: str, user_email: str, callback_url: str) -> str:
-        """Crée une session Connect Bridge et retourne l'URL de redirection."""
         logger.info("Bridge get_connect_url user_uuid=%s", user_uuid)
         access_token = self.get_user_access_token(user_uuid)
         with self._client({"Authorization": f"Bearer {access_token}"}) as client:
@@ -48,11 +62,10 @@ class BridgeService:
             resp.raise_for_status()
             return resp.json()["url"]
 
-    def create_bridge_user(self, external_user_id: str) -> dict:
-        logger.info("Bridge create_bridge_user external_user_id=%s", external_user_id)
-        with self._client() as client:
-            resp = client.post("aggregation/users", json={"external_user_id": external_user_id})
-            logger.info("Bridge create_bridge_user → status=%s body=%.500s", resp.status_code, resp.text)
+    def get_item(self, access_token: str, item_id: str | int) -> dict:
+        with self._client({"Authorization": f"Bearer {access_token}"}) as client:
+            resp = client.get(f"aggregation/items/{item_id}")
+            logger.info("Bridge get_item/%s → status=%s body=%.500s", item_id, resp.status_code, resp.text)
             resp.raise_for_status()
             return resp.json()
 
@@ -88,25 +101,6 @@ class BridgeService:
                 params = {}
 
         return transactions[:limit]
-
-    def get_item(self, access_token: str, item_id: str | int) -> dict:
-        """Récupère les détails d'un item Bridge par son ID numérique."""
-        with self._client({"Authorization": f"Bearer {access_token}"}) as client:
-            resp = client.get(f"aggregation/items/{item_id}")
-            logger.info("Bridge get_item/%s → status=%s body=%.500s", item_id, resp.status_code, resp.text)
-            resp.raise_for_status()
-            return resp.json()
-        with self._client() as client:
-            resp = client.post("aggregation/authorization/token", json={"user_uuid": bridge_user_uuid})
-            resp.raise_for_status()
-            return resp.json()["access_token"]
-
-    def get_item_by_uuid(self, bridge_user_uuid: str, item_uuid: str) -> dict:
-        user_access_token = self.get_user_access_token(bridge_user_uuid)
-        with self._client({"Authorization": f"Bearer {user_access_token}"}) as client:
-            resp = client.get(f"aggregation/items/{item_uuid}")
-            resp.raise_for_status()
-            return resp.json()
 
     def refresh_item(self, user_access_token: str, item_id: int) -> dict:
         with self._client({"Authorization": f"Bearer {user_access_token}"}) as client:
