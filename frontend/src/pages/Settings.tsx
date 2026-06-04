@@ -92,7 +92,7 @@ export default function Settings() {
   const { preference, setPreference } = useTheme();
   const [connecting, setConnecting] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
-  const [connectError, setConnectError] = useState<string | null>(null);
+  const [connectError, setConnectError] = useState<{ summary: string; detail?: string; status?: number } | null>(null);
 
   // ── Env config section ──────────────────────────────────────────────────────
   const [envOpen, setEnvOpen] = useState(false);
@@ -155,9 +155,18 @@ export default function Settings() {
       const callbackUrl = `${window.location.origin}/connect/callback`;
       const { data } = await accountsApi.connectStart(callbackUrl);
       window.location.href = data.connect_url;
-    } catch {
+    } catch (err: unknown) {
       setConnecting(false);
-      setConnectError("Impossible de lancer la connexion bancaire. Vérifiez la configuration Bridge API.");
+      const axiosErr = err as { response?: { status?: number; data?: { detail?: string } }; message?: string };
+      const status = axiosErr.response?.status;
+      const detail = axiosErr.response?.data?.detail;
+      if (detail) {
+        setConnectError({ summary: "Erreur lors du démarrage de la connexion Bridge.", detail, status });
+      } else if (axiosErr.message) {
+        setConnectError({ summary: "Impossible de joindre le serveur.", detail: axiosErr.message });
+      } else {
+        setConnectError({ summary: "Erreur inconnue lors de la connexion bancaire." });
+      }
     }
   };
 
@@ -292,9 +301,21 @@ export default function Settings() {
           </div>
         )}
         {connectError && (
-          <div className="mx-4 mt-3 rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2.5 flex items-start gap-2">
-            <AlertTriangle size={14} className="text-red-400 shrink-0 mt-0.5" />
-            <p className="text-xs text-red-300 leading-relaxed">{connectError}</p>
+          <div className="mx-4 mt-3 mb-1 rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2.5 space-y-2">
+            <div className="flex items-start gap-2">
+              <AlertTriangle size={14} className="text-red-400 shrink-0 mt-0.5" />
+              <p className="text-xs text-red-300 leading-relaxed">
+                {connectError.status && (
+                  <span className="font-mono font-bold mr-1.5">[HTTP {connectError.status}]</span>
+                )}
+                {connectError.summary}
+              </p>
+            </div>
+            {connectError.detail && (
+              <div className="ml-5 rounded bg-gray-950 border border-gray-800 px-2.5 py-2">
+                <pre className="text-xs text-red-300 font-mono whitespace-pre-wrap break-all leading-relaxed">{connectError.detail}</pre>
+              </div>
+            )}
           </div>
         )}
         <div className="px-4 py-3">
