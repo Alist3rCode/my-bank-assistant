@@ -57,7 +57,8 @@ def connect_start(
         step = "get_connect_url"
         connect_url = bridge_service.get_connect_url(
             user_uuid=current_user.bridge_user_uuid,
-            redirect_url=body.redirect_url,
+            user_email=current_user.email,
+            callback_url=body.redirect_url,
         )
         return ConnectStartResponse(connect_url=connect_url)
     except httpx.HTTPStatusError as e:

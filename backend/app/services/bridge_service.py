@@ -20,7 +20,7 @@ class BridgeService:
         h = {
             "Client-Id": settings.BRIDGE_CLIENT_ID,
             "Client-Secret": settings.BRIDGE_CLIENT_SECRET,
-            "Bridge-Version": "2021-06-01",
+            "Bridge-Version": "2025-01-15",
             "Content-Type": "application/json",
         }
         if extra:
@@ -35,17 +35,18 @@ class BridgeService:
                      bool(settings.BRIDGE_CLIENT_SECRET))
         return httpx.Client(base_url=base, headers=self._headers(extra_headers), timeout=30)
 
-    def get_connect_url(self, user_uuid: str, redirect_url: str) -> str:
-        logger.info("Bridge get_connect_url user_uuid=%s redirect_url=%s", user_uuid, redirect_url)
-        with self._client() as client:
-            resp = client.post("connect/items/add/url", json={
-                "user_uuid": user_uuid,
-                "redirect_url": redirect_url,
-                "country": "fr",
+    def get_connect_url(self, user_uuid: str, user_email: str, callback_url: str) -> str:
+        """Crée une session Connect Bridge et retourne l'URL de redirection."""
+        logger.info("Bridge get_connect_url user_uuid=%s", user_uuid)
+        access_token = self.get_user_access_token(user_uuid)
+        with self._client({"Authorization": f"Bearer {access_token}"}) as client:
+            resp = client.post("aggregation/connect-sessions", json={
+                "user_email": user_email,
+                "callback_url": callback_url,
             })
             logger.info("Bridge get_connect_url → status=%s body=%.500s", resp.status_code, resp.text)
             resp.raise_for_status()
-            return resp.json()["redirect_url"]
+            return resp.json()["url"]
 
     def create_bridge_user(self, external_user_id: str) -> dict:
         logger.info("Bridge create_bridge_user external_user_id=%s", external_user_id)
@@ -90,7 +91,7 @@ class BridgeService:
 
     def get_user_access_token(self, bridge_user_uuid: str) -> str:
         with self._client() as client:
-            resp = client.get(f"aggregation/users/{bridge_user_uuid}/access-token")
+            resp = client.post("aggregation/authorization/token", json={"user_uuid": bridge_user_uuid})
             resp.raise_for_status()
             return resp.json()["access_token"]
 
