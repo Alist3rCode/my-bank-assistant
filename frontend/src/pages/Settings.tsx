@@ -1,11 +1,11 @@
-import { Sun, Moon, Monitor, LogOut, Shield, User as UserIcon, Plus, AlertTriangle, HelpCircle, ChevronDown, Eye, EyeOff, Save, RotateCcw } from "lucide-react";
+import { Sun, Moon, Monitor, LogOut, Shield, User as UserIcon, Plus, AlertTriangle, HelpCircle, ChevronDown, Eye, EyeOff, Save, RotateCcw, Terminal, ExternalLink, CheckCircle } from "lucide-react";
 import { useAuthStore } from "../store/useStore";
 import { useTheme } from "../contexts/ThemeContext";
 import type { ThemePreference } from "../contexts/ThemeContext";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { accountsApi, configApi } from "../services/api";
-import BridgeConfigHelp from "../components/BridgeConfigHelp";
+import BridgeConfigHelp, { STEPS as BRIDGE_STEPS } from "../components/BridgeConfigHelp";
 
 interface EnvVarMeta {
   key: string;
@@ -240,17 +240,55 @@ export default function Settings() {
           </div>
         </div>
         {!bridgeConfigured && (
-          <div className="mx-4 mt-3 rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2.5 flex items-start gap-2">
-            <AlertTriangle size={14} className="text-amber-400 shrink-0 mt-0.5" />
-            <p className="text-xs text-amber-300 leading-relaxed">
-              La connexion bancaire via Bridge API n'est pas encore configurée.{" "}
-              <button
-                onClick={() => setShowHelp(true)}
-                className="underline underline-offset-2 hover:text-amber-200 transition-colors"
-              >
-                Voir comment configurer
-              </button>
-            </p>
+          <div className="px-4 py-4 space-y-4 border-b border-gray-800">
+            {missingFields.length > 0 && (
+              <div className="rounded-lg bg-red-500/10 border border-red-500/25 px-3 py-2.5">
+                <p className="text-xs text-red-400 font-medium mb-1.5">Variables manquantes :</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {missingFields.map((f) => (
+                    <code key={f} className="text-xs bg-red-500/20 text-red-300 px-2 py-0.5 rounded font-mono">{f}</code>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-3.5">
+              {BRIDGE_STEPS.map((step) => (
+                <div key={step.n} className="flex gap-3">
+                  <div className="w-5 h-5 rounded-full bg-primary-600/20 border border-primary-500/30 flex items-center justify-center text-xs font-bold text-primary-400 shrink-0 mt-0.5">
+                    {step.n}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-medium text-xs">{step.title}</p>
+                    <p className="text-gray-400 text-xs mt-0.5 leading-relaxed">{step.body}</p>
+                    {step.code && (
+                      <div className="mt-1.5 bg-gray-950 rounded-lg border border-gray-800 px-3 py-2 flex items-start gap-2">
+                        <Terminal size={12} className="text-gray-500 mt-0.5 shrink-0" />
+                        <pre className="text-xs text-green-300 font-mono whitespace-pre-wrap break-all leading-relaxed">{step.code}</pre>
+                      </div>
+                    )}
+                    {"link" in step && step.link && (
+                      <a
+                        href={step.link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 mt-1.5 text-xs text-primary-400 hover:text-primary-300 transition-colors"
+                      >
+                        {step.link.label}
+                        <ExternalLink size={10} />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-start gap-2 rounded-lg bg-green-500/10 border border-green-500/20 px-3 py-2.5">
+              <CheckCircle size={14} className="text-green-400 shrink-0 mt-0.5" />
+              <p className="text-xs text-green-300 leading-relaxed">
+                Une fois le .env mis à jour et le serveur redémarré, le bouton « Connecter » sera opérationnel.
+              </p>
+            </div>
           </div>
         )}
         {connectError && (

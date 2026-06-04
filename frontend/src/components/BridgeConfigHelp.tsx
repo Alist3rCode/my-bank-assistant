@@ -5,7 +5,7 @@ interface Props {
   onClose: () => void;
 }
 
-const STEPS = [
+export const STEPS = [
   {
     n: 1,
     title: "Créer un compte Bridge",
