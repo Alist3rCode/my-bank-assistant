@@ -1,12 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { TrendingUp, TrendingDown, Wallet, PiggyBank, Target, AlertTriangle, Plus, HelpCircle } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, PiggyBank, Target, AlertTriangle } from "lucide-react";
 import { accountsApi, savingsApi, projectsApi, aiApi, transactionsApi } from "../services/api";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import type { Account } from "../types";
-import { useState } from "react";
-import BridgeConfigHelp from "../components/BridgeConfigHelp";
 
 const CATEGORY_COLORS: Record<string, string> = {
   alimentation: "#f97316",
@@ -26,32 +24,6 @@ function fmt(amount: number, currency = "EUR") {
 
 export default function Dashboard() {
   const now = new Date();
-  const [connecting, setConnecting] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
-
-  const { data: bridgeStatus } = useQuery({
-    queryKey: ["bridge-status"],
-    queryFn: () => accountsApi.connectStatus().then((r) => r.data),
-    staleTime: 60_000,
-  });
-
-  const bridgeConfigured = bridgeStatus?.configured ?? true;
-  const missingFields = bridgeStatus?.missing_fields ?? [];
-
-  const handleConnectBank = async () => {
-    if (!bridgeConfigured) {
-      setShowHelp(true);
-      return;
-    }
-    setConnecting(true);
-    try {
-      const callbackUrl = `${window.location.origin}/connect/callback`;
-      const { data } = await accountsApi.connectStart(callbackUrl);
-      window.location.href = data.connect_url;
-    } catch {
-      setConnecting(false);
-    }
-  };
 
   const { data: accounts = [] } = useQuery({ queryKey: ["accounts"], queryFn: () => accountsApi.list().then((r) => r.data) });
   const { data: savingsTotal } = useQuery({ queryKey: ["savings-total"], queryFn: () => savingsApi.total().then((r) => r.data) });
@@ -106,44 +78,7 @@ export default function Dashboard() {
         <div className="card">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold text-white">Comptes bancaires</h2>
-            <div className="flex items-center gap-2">
-              {!bridgeConfigured && (
-                <button
-                  onClick={() => setShowHelp(true)}
-                  title="Configuration Bridge API manquante — cliquer pour l'aide"
-                  className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-medium hover:bg-amber-500/25 transition-colors"
-                >
-                  <AlertTriangle size={13} />
-                  Non configuré
-                  <HelpCircle size={13} className="ml-0.5" />
-                </button>
-              )}
-              <button
-                onClick={handleConnectBank}
-                disabled={connecting}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white text-xs font-medium transition-colors"
-              >
-                <Plus size={14} />
-                {connecting ? "Connexion…" : "Connecter"}
-              </button>
-            </div>
           </div>
-
-          {!bridgeConfigured && (
-            <div className="mb-3 rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2.5 flex items-start gap-2">
-              <AlertTriangle size={14} className="text-amber-400 shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-300 leading-relaxed">
-                La connexion bancaire via Bridge API n'est pas encore configurée.{" "}
-                <button
-                  onClick={() => setShowHelp(true)}
-                  className="underline underline-offset-2 hover:text-amber-200 transition-colors"
-                >
-                  Voir comment configurer
-                </button>
-              </p>
-            </div>
-          )}
-
           <div className="space-y-3">
             {accounts.length === 0 && <p className="text-gray-500 text-sm">Aucun compte connecté</p>}
             {accounts.map((account: Account) => (
@@ -224,13 +159,6 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
-
-    {showHelp && (
-      <BridgeConfigHelp
-        missingFields={missingFields}
-        onClose={() => setShowHelp(false)}
-      />
-    )}
     </>
   );
 }
@@ -253,6 +181,5 @@ function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label:
   );
 }
 
-// Re-export TrendingDown to avoid unused import warning
 const _unused = TrendingDown;
 void _unused;
