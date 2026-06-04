@@ -9,17 +9,14 @@ class BridgeService:
     Docs: https://docs.bridgeapi.io
     """
 
-    def __init__(self):
-        self.base_url = settings.BRIDGE_API_URL
-        self.headers = {
+    def _client(self) -> httpx.Client:
+        headers = {
             "Client-Id": settings.BRIDGE_CLIENT_ID,
             "Client-Secret": settings.BRIDGE_CLIENT_SECRET,
             "Bridge-Version": "2021-06-01",
             "Content-Type": "application/json",
         }
-
-    def _client(self) -> httpx.Client:
-        return httpx.Client(base_url=self.base_url, headers=self.headers, timeout=30)
+        return httpx.Client(base_url=settings.BRIDGE_API_URL, headers=headers, timeout=30)
 
     def get_connect_url(self, user_uuid: str, redirect_url: str) -> str:
         """Génère l'URL de connexion Bridge pour un utilisateur."""

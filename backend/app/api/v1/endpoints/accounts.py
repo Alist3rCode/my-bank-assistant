@@ -48,18 +48,30 @@ def connect_start(
         raise HTTPException(status_code=503, detail="Bridge API non configurée")
 
     try:
+        step = "create_user"
         if not current_user.bridge_user_uuid:
             bridge_data = bridge_service.create_bridge_user(str(current_user.id))
             current_user.bridge_user_uuid = bridge_data["uuid"]
             db.commit()
 
+        step = "get_connect_url"
         connect_url = bridge_service.get_connect_url(
             user_uuid=current_user.bridge_user_uuid,
             redirect_url=body.redirect_url,
         )
         return ConnectStartResponse(connect_url=connect_url)
     except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=502, detail=f"Erreur Bridge API : {e.response.text}")
+        content_type = e.response.headers.get("content-type", "")
+        if "text/html" in content_type:
+            detail = (
+                f"[étape: {step}] Bridge API a retourné une page HTML (HTTP {e.response.status_code}) "
+                f"— identifiants probablement invalides ou URL incorrecte ({settings.BRIDGE_API_URL})."
+            )
+        else:
+            detail = f"[étape: {step}] Bridge API HTTP {e.response.status_code} : {e.response.text}"
+        raise HTTPException(status_code=502, detail=detail)
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=502, detail=f"[étape: {step}] Impossible de joindre Bridge API ({settings.BRIDGE_API_URL}) : {e}")
 
 
 @router.post("/connect/callback", response_model=ConnectCallbackResponse)
